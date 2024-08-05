@@ -660,7 +660,7 @@ void MenuDisplay::doMenuInteraction(uint8_t interaction)
   }
   
 
-  Serial.println(F("MenuDisplay: Interaction"));
+  //Serial.println(F("MenuDisplay: Interaction"));
 
   lastInteractionTime = millis();
   

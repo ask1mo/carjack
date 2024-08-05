@@ -8,7 +8,7 @@
 #include "PID/PID.h"
 #include "DHT20.h"
 #include "Trinity/Trinity.h"
-#include "AskBuzzer/AskBuzzer.h"
+#include "askBuzzer/askBuzzer.h"
 
 #define SYSTEMSTATE_MENU                        1
 #define SYSTEMSTATE_MANUALFLYING                2
@@ -41,7 +41,7 @@ MenuDisplay   *menuDisplay;
 DisplayData   *displayData;
 AskButton     *button;
 PID           *pid;
-//AskServo      *askServo;
+AskServo      *askServo;
 Trinity       *trinity;
 AskBuzzer     *askBuzzer;
 int16_t       servoTime;
@@ -118,7 +118,7 @@ void cycleLedEffect()
 void toggleAutoClimate() 
 {
   autoClimate = !autoClimate;
-  //askServo->setEnabled(autoClimate);
+  askServo->setEnabled(autoClimate);
 }
 void toggleSound()
 {
@@ -450,8 +450,8 @@ void setup()
   pinMode(PIN_LEDS, OUTPUT);
   //PWM servo
   servoTime = 1000/MAXSERVOFRAMERATE;
-  //askServo = new AskServo(PIN_SERVO, SERVO_MIN, SERVO_MAX, 1000);
-  //askServo->setGoalCoords(0);
+  askServo = new AskServo(PIN_SERVO, SERVO_MIN, SERVO_MAX, 1000);
+  askServo->setGoalCoords(0);
   //PID
   pid = new PID(&kProportional, &kIntegral, &kDerivative, SERVO_MIN, SERVO_MAX);
   pid->setSetpoint(21);
@@ -567,18 +567,21 @@ void loop()
 
     
 
-    //askServo->setGoalCoords(pid->calculate(currentTemperature));
+    askServo->setGoalCoords(pid->calculate(currentTemperature));
 
 
-    //askServo->tick();
+    askServo->tick();
      //Serial.print(F(" Servo is at: "));
     //Serial.println(askServo->getCurrentCoords());
+
+
+    askBuzzer->playSound(SOUND_BUTTON_CLICK);
   }
 
   //Leds
   trinity->tick();
 
-  //Soound
+  //Sound
   askBuzzer->tick();
 
 }

@@ -23,6 +23,7 @@ AskServo::AskServo(uint8_t pin, uint16_t lowerEdge, uint16_t upperEdge, uint16_t
     
     servo1.setPeriodHertz(50); // standard 50 hz servo
 
+    
     setEnabled(true);
 
     servo1.write(goalCoords);
@@ -143,13 +144,13 @@ void    AskServo::setEnabled(bool enabled)
     if(enabled)
     {
         Serial.println(F("Servo: Enabled"));
-        //servo1.attach(servo1Pin, 1000, 2000);
+        servo1.attach(servo1Pin, 1000, 2000);
         servo1.write(goalCoords);
     }
     else
     {
         Serial.println(F("Servo: Disabled"));
-        //servo1.detach();
+        servo1.detach();
     }
 }
 
