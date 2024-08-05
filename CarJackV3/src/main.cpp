@@ -1,31 +1,90 @@
 #include <Arduino.h>
-#include <SPI.h>
-#include <mcp2515.h>
+#include "BluetoothSerial.h"
+#include "ELMduino.h"
 
-struct can_frame canMsg;
-MCP2515 mcp2515(10); // Assuming CS pin is connected to GPIO 10
+BluetoothSerial SerialBT;
+#define ELM_PORT SerialBT
+#define DEBUG_PORT Serial
 
-void setup() {
-  Serial.begin(115200);
-  Serial.println("Good evening");
-  delay(1000);
-  SPI.begin();
-  mcp2515.reset();
-  mcp2515.setBitrate(CAN_500KBPS);
-  mcp2515.setNormalMode();
+ELM327 myELM327;
+
+typedef enum
+{
+  ENG_RPM,
+  SPEED
+} obd_pid_states;
+
+obd_pid_states obd_state = ENG_RPM;
+
+float rpm = 0;
+float mph = 0;
+
+void setup()
+{
+  DEBUG_PORT.begin(115200);
+  // SerialBT.setPin("1234");
+  ELM_PORT.begin("ArduHUD", true);
+
+  if (!ELM_PORT.connect("OBDII"))
+  {
+    DEBUG_PORT.println("Couldn't connect to OBD scanner - Phase 1");
+    while (1)
+    {
+
+    }
+  }
+
+  if (!myELM327.begin(ELM_PORT, true, 2000))
+  {
+    DEBUG_PORT.println("Couldn't connect to OBD scanner - Phase 2");
+    while (1)
+    { 
+    }
+  }
+
+  DEBUG_PORT.println("Connected to ELM327");
 }
 
-void loop() {
-  if (mcp2515.readMessage(&canMsg) == MCP2515::ERROR_OK) {
-    Serial.print("ID: ");
-    Serial.print(canMsg.can_id, HEX);
-    Serial.print(" Data: ");
-    for (int i = 0; i < canMsg.can_dlc; i++) {
-      Serial.print(canMsg.data[i], HEX);
-      Serial.print(" ");
+void loop()
+{
+  switch (obd_state)
+  {
+    case ENG_RPM:
+    {
+      rpm = myELM327.rpm();
+      
+      if (myELM327.nb_rx_state == ELM_SUCCESS)
+      {
+        DEBUG_PORT.print("rpm: ");
+        DEBUG_PORT.println(rpm);
+        obd_state = SPEED;
+      }
+      else if (myELM327.nb_rx_state != ELM_GETTING_MSG)
+      {
+        myELM327.printError();
+        obd_state = SPEED;
+      }
+      
+      break;
     }
-    Serial.println();
+    
+    case SPEED:
+    {
+      mph = myELM327.mph();
+      
+      if (myELM327.nb_rx_state == ELM_SUCCESS)
+      {
+        DEBUG_PORT.print("mph: ");
+        DEBUG_PORT.println(mph);
+        obd_state = ENG_RPM;
+      }
+      else if (myELM327.nb_rx_state != ELM_GETTING_MSG)
+      {
+        myELM327.printError();
+        obd_state = ENG_RPM;
+      }
+      
+      break;
+    }
   }
-  delay(1000); // Adjust as needed 
-  Serial.print(".");
 }
