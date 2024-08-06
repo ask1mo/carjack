@@ -33,8 +33,7 @@
 
 #define MAXENCODERSTEPS 1
 
-#define SERVO_MIN 0
-#define SERVO_MAX 180
+
 #define MAXSERVOFRAMERATE 1
 
 //Temp

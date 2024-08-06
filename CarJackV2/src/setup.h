@@ -1,19 +1,30 @@
 #ifndef SETUP_H
 #define SETUP_H
 
-//Pinout
-#define PIN_ENCODER_A       18  //Implemented
-#define PIN_ENCODER_B       5   //Implemented
-#define PIN_BUTTON          25  //Implemented
-#define PIN_VOLTAGESENSOR   35  //Implemented
-#define PIN_AUDIO           14
-#define PIN_BUZZER          27  //Implemented - Needs work
-#define PIN_LEDS            22  //Implemented
-#define PIN_SDA             32  //Implemented
-#define PIN_SCL             33  //Implemented
-#define PIN_SERVO           17  //Implemented - Needs work
-#define PIN_RELAY           26  //Implemented
-#define PIN_LDR             34  //Testing
+/*=== === === PINOUT === === ===*/
+//Pullup Inputs
+#define PIN_ENCODER_A           33  //Implemented
+#define PIN_ENCODER_B           32   //Implemented
+#define PIN_BUTTON              25  //Implemented
+#define PIN_ENDSTOP_MIN         26
+#define PIN_ENDSTOP_MAX         27  
+#define PIN_MANUALOVERIDE_SERVO 14
+//Inputs
+#define PIN_VOLTAGESENSOR       35  //Implemented
+#define PIN_AUDIO              
+//Analog Inputs
+#define PIN_LDR                 34  //Implemented
+//PWM Outputs
+#define PIN_BUZZER              2   //Implemented - Needs work
+#define PIN_SERVO               12  //Implemented - Needs work
+//Digital Outputs
+#define PIN_LEDS                22  //Implemented
+#define PIN_SDA                 15  //Implemented
+#define PIN_SCL                 13  //Implemented
+#define PIN_RELAY               4   //Implemented
+
+#define PWM_CHANNEL_BUZZER 2
+#define PWM_CHANNEL_SERVO  0
 
 
 //Debug settings

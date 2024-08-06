@@ -10,16 +10,16 @@ class PID
     uint8_t *Ki;
     uint8_t *Kd;
 
-    uint8_t min;
-    uint8_t max;
+    int16_t min;
+    int16_t max;
     float setpoint;
     float lastError;
     float lastTime;
     float lastOutput;
 
     public:
-    PID(uint8_t *Kp, uint8_t *Ki, uint8_t *Kd, uint8_t min, uint8_t max);
-    int8_t calculate(float input);
+    PID(uint8_t *Kp, uint8_t *Ki, uint8_t *Kd, int16_t min, int16_t max);
+    int16_t calculate(float input);
     void setSetpoint(float setpoint);
 };
 

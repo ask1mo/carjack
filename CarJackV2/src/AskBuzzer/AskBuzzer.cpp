@@ -15,8 +15,95 @@ AskBuzzer::AskBuzzer(byte pin)
 
     pinMode(this->pin, OUTPUT);
 
-    ledcSetup(0, 5000, 8); // Channel 0, 5kHz frequency, 8-bit resolution
-    ledcAttachPin(this->pin, 0); // Attach pin to channel 0
+    ledcSetup(PWM_CHANNEL_BUZZER, 2000, 8);
+    ledcAttachPin(this->pin, PWM_CHANNEL_BUZZER);
+    ledcWrite(PWM_CHANNEL_BUZZER, 0);
+}
+
+void AskBuzzer::tick()
+{
+    soundTime = millis() - soundStartTime;
+    uint16_t frequency;
+
+    switch (currentPlayingSound)
+    {
+        case SOUND_NONE:
+        {
+            frequency = 0;
+        }
+        break;
+
+        case SOUND_BOOTUP:
+        {
+            frequency = getFrequency_BOOTUP();
+        }
+        break;
+
+        case SOUND_SHUTDOWN:
+        {
+            frequency = getFrequency_SHUTDOWN();
+        }
+        break;
+
+        case SOUND_BUTTON_CLICK:
+        {
+            frequency = getFrequency_BUTTON_CLICK();
+        }
+        break;
+
+        case SOUND_BUTTON_FORWARD:
+        {
+            frequency = getFrequency_BUTTON_FORWARD();
+        }
+        break;
+
+        case SOUND_BUTTON_BACKWARD:
+        {
+            frequency = getFrequency_BUTTON_BACKWARD();
+        }
+        break;
+
+        case SOUND_SMOKE_COUNTDOWN:
+        {
+            frequency = getFrequency_SMOKE_COUNTDOWN();
+        }
+        break;
+
+        case SOUND_SMOKE_ARM:
+        {
+            frequency = getFrequency_SMOKE_ARM();
+        }
+        break;
+        break;
+
+        case SOUND_EASCANADA:
+        {
+            frequency = getFrequency_EASCANADA();
+        }
+        break;
+    }
+
+    //Serial.print("Frq ");
+    //Serial.println(frequency);
+    if (frequency == 0 || !enabled)
+    {
+        ledcWriteTone(PWM_CHANNEL_BUZZER, 0);
+    }
+    else
+    {
+        ledcWriteTone(PWM_CHANNEL_BUZZER, frequency);
+    }
+}
+void AskBuzzer::playSound(uint8_t soundCode)
+{
+    currentPlayingSound = soundCode;
+    ledcWriteTone(PWM_CHANNEL_BUZZER, 0);
+    soundStartTime = millis();
+
+
+    Serial.print(F("Buzzer: Playing sound "));
+    Serial.println(soundCode);
+    
 }
 
 uint16_t AskBuzzer::getFrequency_NONE()
@@ -163,10 +250,7 @@ uint16_t AskBuzzer::getFrequency_SMOKE_ARM()
         return 0;
         currentPlayingSound = SOUND_NONE;
     }
-}
-uint16_t AskBuzzer::getFrequency_SMOKE_DISARM()
-{
-
+    return 0;
 }
 uint16_t AskBuzzer::getFrequency_EASCANADA()
 {
@@ -190,112 +274,7 @@ uint16_t AskBuzzer::getFrequency_EASCANADA()
     return 0;
 }
 
-void AskBuzzer::tick()
-{
-    soundTime = millis() - soundStartTime;
-    uint16_t frequency;
 
-    switch (currentPlayingSound)
-    {
-        case SOUND_NONE:
-        {
-            frequency = 0;
-        }
-        break;
-
-        case SOUND_BOOTUP:
-        {
-            frequency = getFrequency_BOOTUP();
-        }
-        break;
-
-        case SOUND_SHUTDOWN:
-        {
-            frequency = getFrequency_SHUTDOWN();
-        }
-        break;
-
-        case SOUND_BUTTON_CLICK:
-        {
-            frequency = getFrequency_BUTTON_CLICK();
-        }
-        break;
-
-        case SOUND_BUTTON_FORWARD:
-        {
-            frequency = getFrequency_BUTTON_FORWARD();
-        }
-        break;
-
-        case SOUND_BUTTON_BACKWARD:
-        {
-            frequency = getFrequency_BUTTON_BACKWARD();
-        }
-        break;
-
-        case SOUND_SMOKE_COUNTDOWN:
-        {
-            frequency = getFrequency_SMOKE_COUNTDOWN();
-        }
-        break;
-
-        case SOUND_SMOKE_ARM:
-        {
-            frequency = getFrequency_SMOKE_ARM();
-        }
-        break;
-
-        case SOUND_SMOKE_DISARM:
-        {
-            frequency = getFrequency_SMOKE_DISARM();
-        }
-        break;
-
-        case SOUND_EASCANADA:
-        {
-            frequency = getFrequency_EASCANADA();
-        }
-        break;
-    }
-
-    //Serial.print("Frq ");
-    //Serial.println(frequency);
-    if (frequency == 0 || !enabled)
-    {
-        noTone(pin);
-    }
-    else
-    {
-        tone(pin, frequency);
-    }
-}
-void AskBuzzer::playSound(uint8_t soundCode)
-{
-    currentPlayingSound = soundCode;
-    noTone(pin);
-    soundStartTime = millis();
-}
-void AskBuzzer::playTone(uint8_t toneCode)
-{
-    switch (toneCode)
-    {
-        case TONE_NONE:
-        {
-            noTone(pin);
-        }
-        break;
-        
-        case TONE_SMOKE_FIRE:
-        {
-            tone(pin, 1000);
-        }
-        break;
-    }
-}
-void AskBuzzer::stopTone()
-{
-    noTone(pin);
-}
 void AskBuzzer::toggleEnabled()
 {
     if(enabled)enabled = false;

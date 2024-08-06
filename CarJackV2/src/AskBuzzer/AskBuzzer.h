@@ -12,11 +12,7 @@
 #define SOUND_BUTTON_BACKWARD   5
 #define SOUND_SMOKE_COUNTDOWN   6
 #define SOUND_SMOKE_ARM         7
-#define SOUND_SMOKE_DISARM      8
 #define SOUND_EASCANADA         9
-
-#define TONE_NONE               0
-#define TONE_SMOKE_FIRE         1
 
 class AskBuzzer
 {
@@ -34,7 +30,6 @@ class AskBuzzer
     uint16_t getFrequency_BUTTON_BACKWARD();
     uint16_t getFrequency_SMOKE_COUNTDOWN();
     uint16_t getFrequency_SMOKE_ARM();
-    uint16_t getFrequency_SMOKE_DISARM();
     uint16_t getFrequency_EASCANADA();
 
     public:
@@ -45,8 +40,7 @@ class AskBuzzer
     uint8_t getCurrentlyPlayingSound();
     void tick();
     void playSound(uint8_t soundCode);
-    void playTone(uint8_t toneCode);
-    void stopTone();
+
 };
 
 #endif

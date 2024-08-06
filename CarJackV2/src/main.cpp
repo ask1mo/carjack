@@ -468,13 +468,13 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
   pinMode(PIN_LEDS, OUTPUT);
   //PWM servo
   servoTime = 1000/MAXSERVOFRAMERATE;
-  askServo = new AskServo(PIN_SERVO, SERVO_MIN, SERVO_MAX, 1000);
-  askServo->setGoalCoords(0);
+  askServo = new AskServo(PIN_SERVO, PIN_ENDSTOP_MIN, PIN_ENDSTOP_MAX, SERVO_MIN, SERVO_MAX);
+  askServo->setVelocity(0);
   //PID
   pid = new PID(&kProportional, &kIntegral, &kDerivative, SERVO_MIN, SERVO_MAX);
   pid->setSetpoint(21);
   //DHT
-  Wire.begin(PIN_SCL, PIN_SDA);
+  Wire.begin(PIN_SDA, PIN_SCL);
   uint8_t returnvak = DHT.begin();
   Serial.print(F("DHT20: "));
   Serial.println(returnvak);
@@ -559,12 +559,12 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
       {
         powerLossTimer = 11;
         digitalWrite(PIN_RELAY, HIGH);
-        playSound(SOUND_SMOKE_DISARM);
+        //playSound(SOUND_BUTTON_CLICK);
         menuDisplay->forceTick();
       }
       else
       {
-        playSound(SOUND_SMOKE_DISARM);
+        playSound(SOUND_BUTTON_CLICK);
       }
     }
     else
@@ -603,15 +603,10 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
 
       
 
-      askServo->setGoalCoords(pid->calculate(currentTemperature));
+      askServo->setVelocity(pid->calculate(currentTemperature));
 
 
       askServo->tick();
-      //Serial.print(F(" Servo is at: "));
-      //Serial.println(askServo->getCurrentCoords());
-
-
-      //playSound(SOUND_BUTTON_CLICK);
     }
 
     //Leds
@@ -622,8 +617,8 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
     
     //LDR
     float dingus = analogRead(PIN_LDR);
-    Serial.print(F("LDR: "));
-    Serial.println(dingus);
+    //Serial.print(F("LDR: "));
+    //Serial.println(dingus);
 
     vTaskDelay(1);
   }

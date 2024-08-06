@@ -1,6 +1,6 @@
 #include "PID.h"
 
-PID::PID(uint8_t *Kp, uint8_t *Ki, uint8_t *Kd, uint8_t min, uint8_t max)
+PID::PID(uint8_t *Kp, uint8_t *Ki, uint8_t *Kd, int16_t min, int16_t max)
 {
     Serial.println(F("PID: Starting"));
     this->Kp = Kp;
@@ -14,7 +14,7 @@ PID::PID(uint8_t *Kp, uint8_t *Ki, uint8_t *Kd, uint8_t min, uint8_t max)
     setpoint = 0;
 }
 
-int8_t PID::calculate(float input)
+int16_t PID::calculate(float input)
 {
     Serial.print(F("PID: Input: "));
     Serial.print(input);
