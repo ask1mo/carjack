@@ -13,7 +13,10 @@ AskBuzzer::AskBuzzer(byte pin)
     enabled = true;
 
 
-    pinMode(this->pin, INPUT_PULLUP);
+    pinMode(this->pin, OUTPUT);
+
+    ledcSetup(0, 5000, 8); // Channel 0, 5kHz frequency, 8-bit resolution
+    ledcAttachPin(this->pin, 0); // Attach pin to channel 0
 }
 
 uint16_t AskBuzzer::getFrequency_NONE()
@@ -255,7 +258,7 @@ void AskBuzzer::tick()
         break;
     }
 
-    //Serial.print("Frequency: ");
+    //Serial.print("Frq ");
     //Serial.println(frequency);
     if (frequency == 0 || !enabled)
     {

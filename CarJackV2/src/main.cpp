@@ -1,86 +1,7 @@
-#include "AskButton/AskButton.h"
-#include <Arduino.h>
-#include <Wire.h>
-#include <ESP32Encoder.h>
-#include "setup.h"
-#include "MenuDisplay/MenuDisplay.h"
-#include "AskServo/AskServo.h"
-#include "PID/PID.h"
-#include "DHT20.h"
-#include "Trinity/Trinity.h"
-#include "askBuzzer/askBuzzer.h"
+#include "main.h"
 
-#define SYSTEMSTATE_MENU                        1
-#define SYSTEMSTATE_MANUALFLYING                2
-#define SYSTEMSTATE_AUTOMATICFLYING             3
-#define SYSTEMSTATE_SETUPAUTOMATIC              4
-#define SYSTEMSTATE_EMERGENCY                   5
-#define SYSTEMSTATE_TEST                        6
-#define SYSTEMSTATE_VAREDIT_SELECTPOINTTOEDIT   7
-#define SYSTEMSTATE_VAREDIT_GAMETIME            8
-#define SYSTEMSTATE_VAREDIT_DRONESPEED          9
-#define SYSTEMSTATE_POINTEDIT                   10
-#define SYSTEMSTATE_VAREDIT_PID                 11
-#define SYSTEMSTATE_TEMPERATUREEDIT             14
-#define SYSTEMSTATE_VAREDIT_BRIGHTNESS          15
-
-#define TEMPERATURE_MIN 15
-#define TEMPERATURE_MAX 35
-
-
-#define SERVO_MIN 0
-#define SERVO_MAX 180
-#define MAXSERVOFRAMERATE 1
-
-//Temp
-uint8_t servoAngle = 90;
-bool servoPolarity = 0;
-
-//Variables
-MenuDisplay   *menuDisplay;
-DisplayData   *displayData;
-AskButton     *button;
-PID           *pid;
-AskServo      *askServo;
-Trinity       *trinity;
-AskBuzzer     *askBuzzer;
-int16_t       servoTime;
-uint64_t      prevServoMillis;
-uint8_t       displayMode;
-ESP32Encoder  encoder;
-int8_t        encoderValue;
-uint8_t       powerLossTimer = 11;
-uint32_t      lastMillis_PowerLoss = 0;
-DHT20         DHT;
-uint8_t       systemState = SYSTEMSTATE_MENU;
-uint64_t      pidNew;
-char          pidCurrent;
-uint64_t      ledBrightnessOld;
-
-
-//Settings
-uint64_t ledEffect = 0;
-uint64_t ledBrightness = 100;
-bool autoClimate = true;
-uint64_t goalTemperature = 21;
-uint64_t goalTemperatureNew;
-bool screenOff = false;
-bool nightScreenOff = false;
-bool sound = false;
-uint8_t kProportional = 5;
-uint8_t kIntegral = 1;
-uint8_t kDerivative = 1;
-uint64_t kProportional_display = 5;
-uint64_t kIntegral_display = 1;
-uint64_t kDerivative_display = 1;
-
-//Sensors
-float currentTemperature;
-float currentHumidity;
-bool dayBrightness;
-bool carPowered;
-
-
+/*=== === === ALPHA === === ===*/
+//Display functions
 void cycleLedEffect()
 {
   ledEffect++;
@@ -124,10 +45,6 @@ void toggleSound()
 {
   sound = !sound;
 }
-void cycleLEDEffect()
-{
-  ledEffect++;
-}
 void engageScreenSaver()
 {
   menuDisplay->startScreensaver();
@@ -155,7 +72,7 @@ void enterMode_Menu()
   Serial.println(F("Mode switch: Menu"));
   systemState = SYSTEMSTATE_MENU;
   menuDisplay->doMenuInteraction(MENUINTERACTION_MENU_OPEN);
-  askBuzzer->playSound(SOUND_BUTTON_CLICK);
+  //playSound(SOUND_BUTTON_FORWARD); //Click sound
 }
 void enterMode_VarEdit_Temperature_Yes()
 {
@@ -265,7 +182,6 @@ void enterMode_VarEdit_Brightness_No()
 
   enterMode_Menu();
 }
-
 void enterMode_VarEdit_Brightness()
 {
   Serial.println(F("Mode switch: Brightness Edit"));
@@ -275,7 +191,7 @@ void enterMode_VarEdit_Brightness()
   
   systemState = SYSTEMSTATE_VAREDIT_BRIGHTNESS;
 }
-
+//Display Handling
 void handleMode_Menu()
 {
   if (encoderValue > 0)
@@ -283,7 +199,7 @@ void handleMode_Menu()
     for (int i = 0; i < encoderValue; i++)
     {
       menuDisplay->doMenuInteraction(MENUINTERACTION_PREVIOUS);
-      askBuzzer->playSound(SOUND_BUTTON_BACKWARD);
+      playSound(SOUND_BUTTON_CLICK); //Scroll previous sound
       menuDisplay->tick(); 
     }
   }
@@ -292,7 +208,7 @@ void handleMode_Menu()
     for (int i = 0; i < abs(encoderValue); i++)
     {
       menuDisplay->doMenuInteraction(MENUINTERACTION_NEXT);
-      askBuzzer->playSound(SOUND_BUTTON_FORWARD);
+      playSound(SOUND_BUTTON_CLICK); //Scroll next sound
       menuDisplay->tick(); 
     }
   }
@@ -302,19 +218,18 @@ void handleMode_Menu()
   {
     case BUTTON_TAPPED:
       menuDisplay->doMenuInteraction(MENUINTERACTION_ENTER);
-      askBuzzer->playSound(SOUND_BUTTON_CLICK);
+      playSound(SOUND_BUTTON_FORWARD);
       Serial.println("Tapped");
       menuDisplay->tick();
       break;
     case BUTTON_HELD:
       menuDisplay->doMenuInteraction(MENUINTERACTION_EXIT);
-      askBuzzer->playSound(SOUND_BUTTON_CLICK);
+      playSound(SOUND_BUTTON_BACKWARD);
       Serial.println("Held");
       menuDisplay->tick();
       break;
   } 
 }
-
 void handleMode_VariableEdit_PID()
 {
   if (encoderValue > 0)
@@ -384,7 +299,7 @@ void handleMode_VariableEdit_Brightness()
   encoderValue = 0;
   handleMode_Menu();
 }
-
+//Functions
 void doDisplayShit()
 {
   if (menuDisplay->isDialogBoxOpen())
@@ -433,9 +348,80 @@ void doDisplayShit()
   menuDisplay->tick();
 }
 
+/*=== === === MUTEX === === ===*/
+void playSound(uint8_t sound)
+{
+  buffered_sound_in = sound;
+}
+void checkNew_playSound_in()
+{
+  if (soundMutexTaken) return;
+  
+  soundMutexTaken = true;
+  if (buffered_sound_in != 0)
+  {
+    buffered_sound_mutex = buffered_sound_in;
+    buffered_sound_in = 0;
+  }
+  soundMutexTaken = false;
+  
+}
+void checkNew_playSound_out()
+{
+  if (soundMutexTaken) return;
+  
+  soundMutexTaken = true;
+  if (buffered_sound_mutex != 0)
+  {
+    askBuzzer->playSound(buffered_sound_mutex);
+    buffered_sound_mutex = 0;
+  }
+  soundMutexTaken = false;  
+}
+
+/*=== === === BETA === === ===*/
+
 void setup()
 {
   Serial.begin(115200);
+  Serial.println(F("----- ===== Setup started ===== -----"));
+
+  xTaskCreatePinnedToCore
+  (
+    task_alpha,       /* Task function. */
+    "task_main",         /* name of task. */
+    10000,           /* Stack size of task */
+    NULL,            /* parameter of the task */
+    1,               /* priority of the task */
+    &Task1,          /* Task handle to keep track of created task */
+    0                /* pin task to core 0 */
+  );              
+
+  xTaskCreatePinnedToCore
+  (
+    task_beta,       /* Task function. */
+    "task_leds",         /* name of task. */
+    10000,           /* Stack size of task */
+    NULL,            /* parameter of the task */
+    1,               /* priority of the task */
+    &Task2,          /* Task handle to keep track of created task */
+    1               /* pin task to core 1 */
+  ); 
+
+
+
+
+  
+}
+void loop()
+{
+  
+
+}
+void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
+{
+  //Setup
+  Serial.println("----- ===== Task Alpha Setup Started ===== -----");
   //Battery backup relay
   pinMode(PIN_RELAY, OUTPUT);
   digitalWrite(PIN_RELAY, HIGH);
@@ -517,71 +503,92 @@ void setup()
 
   setBrightness(100);
 
-  askBuzzer               = new AskBuzzer(PIN_BUZZER);
-  askBuzzer->playSound(SOUND_BOOTUP);
-}
-void loop()
-{
-  uint64_t currentMillis = millis();
-
-  //Encoder
-  encoderValue = encoder.getCount();
-  encoder.setCount(0); //Reset encoder
-
-  //Auto shutoff
-  carPowered = digitalRead(PIN_VOLTAGESENSOR);
-  if (carPowered)
+  
+  Serial.println("----- ===== Task Alpha Setup Complete ===== -----");
+  
+  //Loop
+  while (1)
   {
-    powerLossTimer = 11;
-    digitalWrite(PIN_RELAY, HIGH);
-  }
-  else
-  {
-    //Millis 10 second countdown
-    if (millis() - lastMillis_PowerLoss > 1000)
+    uint64_t currentMillis = millis();
+
+    //Encoder
+    encoderValue = encoder.getCount();
+    encoder.setCount(0); //Reset encoder
+
+    //Auto shutoff
+    carPowered = digitalRead(PIN_VOLTAGESENSOR);
+    if (carPowered)
     {
-      if (powerLossTimer > 0)
+      powerLossTimer = 11;
+      digitalWrite(PIN_RELAY, HIGH);
+    }
+    else
+    {
+      //Millis 10 second countdown
+      if (millis() - lastMillis_PowerLoss > 1000)
       {
-        powerLossTimer--;
-        lastMillis_PowerLoss = millis();
-      }
-      if (powerLossTimer == 0)
-      {
-        digitalWrite(PIN_RELAY, LOW);
+        if (powerLossTimer > 0)
+        {
+          powerLossTimer--;
+          lastMillis_PowerLoss = millis();
+        }
+        if (powerLossTimer == 0)
+        {
+          digitalWrite(PIN_RELAY, LOW);
+        }
       }
     }
-  }
 
-  //Display
-  doDisplayShit();
+    //Display
+    doDisplayShit();
 
 
-  //Thermometer, PID & Servo
-  if(currentMillis >= (prevServoMillis+servoTime))
-  {
-    prevServoMillis = currentMillis;
+    //Thermometer, PID & Servo
+    if(currentMillis >= (prevServoMillis+servoTime))
+    {
+      prevServoMillis = currentMillis;
 
-    int status = DHT.read();
-    currentTemperature = DHT.getTemperature();
-    currentHumidity = DHT.getHumidity();
+      int status = DHT.read();
+      currentTemperature = DHT.getTemperature();
+      currentHumidity = DHT.getHumidity();
 
+      
+
+      askServo->setGoalCoords(pid->calculate(currentTemperature));
+
+
+      askServo->tick();
+      //Serial.print(F(" Servo is at: "));
+      //Serial.println(askServo->getCurrentCoords());
+
+
+      //playSound(SOUND_BUTTON_CLICK);
+    }
+
+    //Leds
+    trinity->tick();
+
+    //Sound
+    checkNew_playSound_in(); //Put new sounds in buffer for other core
     
-
-    askServo->setGoalCoords(pid->calculate(currentTemperature));
-
-
-    askServo->tick();
-     //Serial.print(F(" Servo is at: "));
-    //Serial.println(askServo->getCurrentCoords());
-
-
-    askBuzzer->playSound(SOUND_BUTTON_CLICK);
+    vTaskDelay(1);
   }
+}
+void task_beta( void *pvParameters )
+{
+  //Setup
+  Serial.println("----- ===== Task Beta Setup Started ===== -----");
 
-  //Leds
-  trinity->tick();
+  askBuzzer               = new AskBuzzer(PIN_BUZZER);
+  playSound(SOUND_BOOTUP);
 
-  //Sound
-  askBuzzer->tick();
-
+  Serial.println("----- ===== Task Beta Setup Complete ===== -----");
+  
+  //Loop
+  while (1)
+  {
+    checkNew_playSound_out(); //Play sounds from buffer
+    askBuzzer->tick();
+    vTaskDelay(1);
+  }
 }
