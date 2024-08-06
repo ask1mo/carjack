@@ -212,6 +212,8 @@ void handleMode_Menu()
       menuDisplay->tick(); 
     }
   }
+
+  
   
 
   switch (button->getCommand())
@@ -379,6 +381,38 @@ void checkNew_playSound_out()
   soundMutexTaken = false;  
 }
 
+void bufferEncoder(int8_t encoderVal)
+{
+  buffered_encoder_in += encoderVal;
+}
+void checkNew_encoder_in()
+{
+  if (encoderMutexTaken) return;
+  
+  encoderMutexTaken = true;
+  if (buffered_encoder_in != 0)
+  {
+    buffered_encoder_mutex += buffered_encoder_in;
+    buffered_encoder_in = 0;
+
+    if (buffered_encoder_mutex > MAXENCODERSTEPS) buffered_encoder_mutex = MAXENCODERSTEPS;
+    if (buffered_encoder_mutex < -MAXENCODERSTEPS) buffered_encoder_mutex = -MAXENCODERSTEPS;
+  }
+  encoderMutexTaken = false;
+}
+void checkNew_encoder_out()
+{
+  if (encoderMutexTaken) return;
+  
+  encoderMutexTaken = true;
+  if (buffered_encoder_mutex != 0)
+  {
+    encoderValue = buffered_encoder_mutex;
+    buffered_encoder_mutex = 0;
+  }
+  encoderMutexTaken = false;
+}
+
 /*=== === === BETA === === ===*/
 
 void setup()
@@ -427,11 +461,9 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
   digitalWrite(PIN_RELAY, HIGH);
   //Voltage sensor
   pinMode(PIN_VOLTAGESENSOR, INPUT);
-  //Encoder
-  encoder.attachSingleEdge(PIN_ENCODER_B, PIN_ENCODER_A);
-  encoder.clearCount();
   
-  button = new AskButton(PIN_BUTTON, 300);
+  
+  button = new AskButton(PIN_BUTTON, 400);
   //Leds
   pinMode(PIN_LEDS, OUTPUT);
   //PWM servo
@@ -446,6 +478,9 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
   uint8_t returnvak = DHT.begin();
   Serial.print(F("DHT20: "));
   Serial.println(returnvak);
+
+  //LDR
+  pinMode(PIN_LDR, INPUT);
 
 
 
@@ -512,25 +547,38 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
     uint64_t currentMillis = millis();
 
     //Encoder
-    encoderValue = encoder.getCount();
-    encoder.setCount(0); //Reset encoder
+    encoderValue = 0;
+    checkNew_encoder_out();
+    
 
     //Auto shutoff
-    carPowered = digitalRead(PIN_VOLTAGESENSOR);
+    bool carPoweredNew = digitalRead(PIN_VOLTAGESENSOR);
     if (carPowered)
     {
-      powerLossTimer = 11;
-      digitalWrite(PIN_RELAY, HIGH);
+      if (carPoweredNew)
+      {
+        powerLossTimer = 11;
+        digitalWrite(PIN_RELAY, HIGH);
+        playSound(SOUND_SMOKE_DISARM);
+        menuDisplay->forceTick();
+      }
+      else
+      {
+        playSound(SOUND_SMOKE_DISARM);
+      }
     }
     else
     {
       //Millis 10 second countdown
       if (millis() - lastMillis_PowerLoss > 1000)
       {
+        menuDisplay->forceTick();
+
         if (powerLossTimer > 0)
         {
           powerLossTimer--;
           lastMillis_PowerLoss = millis();
+          playSound(SOUND_SHUTDOWN);
         }
         if (powerLossTimer == 0)
         {
@@ -538,6 +586,7 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
         }
       }
     }
+    carPowered = carPoweredNew;
 
     //Display
     doDisplayShit();
@@ -571,6 +620,11 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
     //Sound
     checkNew_playSound_in(); //Put new sounds in buffer for other core
     
+    //LDR
+    float dingus = analogRead(PIN_LDR);
+    Serial.print(F("LDR: "));
+    Serial.println(dingus);
+
     vTaskDelay(1);
   }
 }
@@ -578,6 +632,10 @@ void task_beta( void *pvParameters )
 {
   //Setup
   Serial.println("----- ===== Task Beta Setup Started ===== -----");
+
+  //Encoder
+  encoder.attachSingleEdge(PIN_ENCODER_B, PIN_ENCODER_A);
+  encoder.clearCount();
 
   askBuzzer               = new AskBuzzer(PIN_BUZZER);
   playSound(SOUND_BOOTUP);
@@ -587,6 +645,14 @@ void task_beta( void *pvParameters )
   //Loop
   while (1)
   {
+    //Encoder
+    bufferEncoder(encoder.getCount());
+    encoder.setCount(0); //Reset ncoder
+    checkNew_encoder_in(); //Put new encoder values in buffer for other core
+
+
+
+    //Sound
     checkNew_playSound_out(); //Play sounds from buffer
     askBuzzer->tick();
     vTaskDelay(1);

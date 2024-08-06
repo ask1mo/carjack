@@ -31,6 +31,7 @@
 #define TEMPERATURE_MIN 15
 #define TEMPERATURE_MAX 35
 
+#define MAXENCODERSTEPS 1
 
 #define SERVO_MIN 0
 #define SERVO_MAX 180
@@ -84,12 +85,17 @@ float currentHumidity;
 bool dayBrightness;
 bool carPowered;
 
-//Mutex
+/*=== === === MUTEX === === ===*/
+//Audio
 bool soundMutexTaken = false;
 uint8_t buffered_sound_in;
 uint8_t buffered_sound_mutex;
 void playSound(uint8_t sound);
-
+//Encoder
+bool encoderMutexTaken = false;
+int8_t buffered_encoder_in;
+int8_t buffered_encoder_mutex;
+void bufferEncoder(int8_t encoderValue);
 
 //Tasks
 TaskHandle_t            Task1;

@@ -5,15 +5,15 @@
 #define PIN_ENCODER_A       18  //Implemented
 #define PIN_ENCODER_B       5   //Implemented
 #define PIN_BUTTON          25  //Implemented
-#define PIN_VOLTAGESENSOR   16  //Implemented
+#define PIN_VOLTAGESENSOR   35  //Implemented
 #define PIN_AUDIO           14
-#define PIN_BUZZER          27 
+#define PIN_BUZZER          27  //Implemented - Needs work
 #define PIN_LEDS            22  //Implemented
 #define PIN_SDA             32  //Implemented
 #define PIN_SCL             33  //Implemented
-#define PIN_SERVO           17  //Implemented
+#define PIN_SERVO           17  //Implemented - Needs work
 #define PIN_RELAY           26  //Implemented
-#define PIN_LDR             13
+#define PIN_LDR             34  //Testing
 
 
 //Debug settings

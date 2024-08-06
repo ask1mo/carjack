@@ -22,6 +22,8 @@ AskServo::AskServo(uint8_t pin, uint16_t lowerEdge, uint16_t upperEdge, uint16_t
     servo1Pin = pin;
     
     servo1.setPeriodHertz(50); // standard 50 hz servo
+    ledcSetup(1, 50, 8);
+    ledcAttachPin(servo1Pin, 1);
 
     
     setEnabled(true);
