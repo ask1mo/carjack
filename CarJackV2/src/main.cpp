@@ -469,7 +469,9 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
   //PWM servo
   servoTime = 1000/MAXSERVOFRAMERATE;
   askServo = new AskServo(PIN_SERVO, PIN_ENDSTOP_MIN, PIN_ENDSTOP_MAX, SERVO_MIN, SERVO_MAX);
-  askServo->setVelocity(0);
+  pinMode(PIN_ENDSTOP_MIN, INPUT_PULLUP);
+  pinMode(PIN_ENDSTOP_MAX, INPUT_PULLUP);
+  pinMode(PIN_MANUALOVERIDE_SERVO, INPUT_PULLUP);
   //PID
   pid = new PID(&kProportional, &kIntegral, &kDerivative, SERVO_MIN, SERVO_MAX);
   pid->setSetpoint(21);
@@ -478,7 +480,6 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
   uint8_t returnvak = DHT.begin();
   Serial.print(F("DHT20: "));
   Serial.println(returnvak);
-
   //LDR
   pinMode(PIN_LDR, INPUT);
 
@@ -593,6 +594,12 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
 
 
     //Thermometer, PID & Servo
+
+    
+    if (digitalRead(PIN_ENDSTOP_MIN) == LOW) Serial.println("Endstop min");
+    if (digitalRead(PIN_ENDSTOP_MAX) == LOW) Serial.println("Endstop max");
+    if (digitalRead(PIN_MANUALOVERIDE_SERVO) == LOW) Serial.println("Manual override");
+
     if(currentMillis >= (prevServoMillis+servoTime))
     {
       prevServoMillis = currentMillis;

@@ -4,19 +4,19 @@
 /*=== === === PINOUT === === ===*/
 //Pullup Inputs
 #define PIN_ENCODER_A           33  //Implemented
-#define PIN_ENCODER_B           32   //Implemented
+#define PIN_ENCODER_B           32  //Implemented
 #define PIN_BUTTON              25  //Implemented
-#define PIN_ENDSTOP_MIN         26
-#define PIN_ENDSTOP_MAX         27  
-#define PIN_MANUALOVERIDE_SERVO 14
+#define PIN_ENDSTOP_MIN         27  //Tested
+#define PIN_ENDSTOP_MAX         14  //Tested
+#define PIN_MANUALOVERIDE_SERVO 12  //Tested
 //Inputs
 #define PIN_VOLTAGESENSOR       35  //Implemented
-#define PIN_AUDIO              
+#define PIN_AUDIO               26  //THEORY
 //Analog Inputs
 #define PIN_LDR                 34  //Implemented
 //PWM Outputs
-#define PIN_BUZZER              2   //Implemented - Needs work
-#define PIN_SERVO               12  //Implemented - Needs work
+#define PIN_BUZZER              2   //Implemented
+#define PIN_SERVO               16  //Implemented
 //Digital Outputs
 #define PIN_LEDS                22  //Implemented
 #define PIN_SDA                 15  //Implemented
