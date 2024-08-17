@@ -186,7 +186,7 @@ void Trinity::setAnimation_Atos_0() //Special Synth
     setPanelDiodeVfx(2, j, (VFXData){EFFECT_SPECIAL_SYNTH, COLOUR_BLACK, offset, speed, true});
   }
 
-  forceTick(1000, false, 0);
+  //forceTick(1000, false, 0);
 
   
   setPanelBrightness(0, 0, false);

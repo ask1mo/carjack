@@ -231,6 +231,7 @@ void handleMode_Menu()
       menuDisplay->tick();
       break;
   } 
+  
 }
 void handleMode_VariableEdit_PID()
 {
@@ -417,6 +418,8 @@ void checkNew_encoder_out()
 
 void setup()
 {
+  pinMode(PIN_RELAY, INPUT_PULLUP); //Quick pin high for relay
+
   Serial.begin(115200);
   Serial.println(F("----- ===== Setup started ===== -----"));
 
@@ -441,11 +444,6 @@ void setup()
     &Task2,          /* Task handle to keep track of created task */
     1               /* pin task to core 1 */
   ); 
-
-
-
-
-  
 }
 void loop()
 {
