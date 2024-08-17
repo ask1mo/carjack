@@ -14,6 +14,13 @@
 #define SOUND_SMOKE_ARM         7
 #define SOUND_EASCANADA         9
 
+#define SOUND_ATOS_SCROLL       10
+#define SOUND_ATOS_SELECT       11
+#define SOUND_ATOS_RETURN       12
+#define SOUND_ATOS_BOOTUP       13
+#define SOUND_ATOS_SHUTDOWN     14
+#define SOUND_ATOS_NOBATTERY    15
+
 class AskBuzzer
 {
     private:
@@ -31,6 +38,13 @@ class AskBuzzer
     uint16_t getFrequency_SMOKE_COUNTDOWN();
     uint16_t getFrequency_SMOKE_ARM();
     uint16_t getFrequency_EASCANADA();
+    
+    uint16_t getFrequency_ATOS_SCROLL();
+    uint16_t getFrequency_ATOS_SELECT();
+    uint16_t getFrequency_ATOS_RETURN();
+    uint16_t getFrequency_ATOS_BOOTUP();
+    uint16_t getFrequency_ATOS_SHUTDOWN();
+    uint16_t getFrequency_ATOS_NOBATTERY();
 
     public:
     AskBuzzer(byte pin);

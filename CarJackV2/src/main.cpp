@@ -72,7 +72,6 @@ void enterMode_Menu()
   Serial.println(F("Mode switch: Menu"));
   systemState = SYSTEMSTATE_MENU;
   menuDisplay->doMenuInteraction(MENUINTERACTION_MENU_OPEN);
-  //playSound(SOUND_BUTTON_FORWARD); //Click sound
 }
 void enterMode_VarEdit_Temperature_Yes()
 {
@@ -199,7 +198,7 @@ void handleMode_Menu()
     for (int i = 0; i < encoderValue; i++)
     {
       menuDisplay->doMenuInteraction(MENUINTERACTION_PREVIOUS);
-      playSound(SOUND_BUTTON_CLICK); //Scroll previous sound
+      playSound(SOUND_ATOS_SCROLL); //Scroll previous sound
       menuDisplay->tick(); 
     }
   }
@@ -208,7 +207,7 @@ void handleMode_Menu()
     for (int i = 0; i < abs(encoderValue); i++)
     {
       menuDisplay->doMenuInteraction(MENUINTERACTION_NEXT);
-      playSound(SOUND_BUTTON_CLICK); //Scroll next sound
+      playSound(SOUND_ATOS_SCROLL); //Scroll next sound
       menuDisplay->tick(); 
     }
   }
@@ -220,13 +219,13 @@ void handleMode_Menu()
   {
     case BUTTON_TAPPED:
       menuDisplay->doMenuInteraction(MENUINTERACTION_ENTER);
-      playSound(SOUND_BUTTON_FORWARD);
+      playSound(SOUND_ATOS_SELECT);
       Serial.println("Tapped");
       menuDisplay->tick();
       break;
     case BUTTON_HELD:
       menuDisplay->doMenuInteraction(MENUINTERACTION_EXIT);
-      playSound(SOUND_BUTTON_BACKWARD);
+      playSound(SOUND_ATOS_RETURN);
       Serial.println("Held");
       menuDisplay->tick();
       break;
@@ -558,27 +557,30 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
       {
         powerLossTimer = 11;
         digitalWrite(PIN_RELAY, HIGH);
-        //playSound(SOUND_BUTTON_CLICK);
-        menuDisplay->forceTick();
       }
       else
       {
-        playSound(SOUND_BUTTON_CLICK);
+        menuDisplay->forceTick();
+        playSound(SOUND_ATOS_NOBATTERY);
       }
     }
     else
     {
+
       //Millis 10 second countdown
       if (millis() - lastMillis_PowerLoss > 1000)
       {
         menuDisplay->forceTick();
 
-        if (powerLossTimer > 0)
+        if (powerLossTimer > 0) //Every second when shutting down
         {
           powerLossTimer--;
           lastMillis_PowerLoss = millis();
-          playSound(SOUND_SHUTDOWN);
+          menuDisplay->forceTick();
+          if (powerLossTimer != 1 && powerLossTimer != 11) playSound(SOUND_ATOS_SCROLL);
+          if (powerLossTimer == 1) playSound(SOUND_ATOS_SHUTDOWN);
         }
+
         if (powerLossTimer == 0)
         {
           digitalWrite(PIN_RELAY, LOW);
@@ -638,7 +640,8 @@ void task_beta( void *pvParameters )
   encoder.clearCount();
 
   askBuzzer               = new AskBuzzer(PIN_BUZZER);
-  playSound(SOUND_BOOTUP);
+  askBuzzer->setEnabled(false);
+  playSound(SOUND_ATOS_BOOTUP);
 
   Serial.println("----- ===== Task Beta Setup Complete ===== -----");
   

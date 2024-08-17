@@ -74,13 +74,54 @@ void AskBuzzer::tick()
             frequency = getFrequency_SMOKE_ARM();
         }
         break;
-        break;
-
         case SOUND_EASCANADA:
         {
             frequency = getFrequency_EASCANADA();
         }
         break;
+
+
+
+
+
+        case SOUND_ATOS_SCROLL:
+        {
+            frequency = getFrequency_ATOS_SCROLL();
+        }
+        break;
+
+        case SOUND_ATOS_SELECT:
+        {
+            frequency = getFrequency_ATOS_SELECT();
+        }
+        break;
+
+        case SOUND_ATOS_RETURN:
+        {
+            frequency = getFrequency_ATOS_RETURN();
+        }
+        break;
+
+        case SOUND_ATOS_BOOTUP:
+        {
+            frequency = getFrequency_ATOS_BOOTUP();
+        }
+        break;
+
+        case SOUND_ATOS_SHUTDOWN:
+        {
+            frequency = getFrequency_ATOS_SHUTDOWN();
+        }
+        break;
+
+        case SOUND_ATOS_NOBATTERY:
+        {
+            frequency = getFrequency_ATOS_NOBATTERY();
+        }
+        break;
+
+        
+        
     }
 
     //Serial.print("Frq ");
@@ -101,8 +142,8 @@ void AskBuzzer::playSound(uint8_t soundCode)
     soundStartTime = millis();
 
 
-    Serial.print(F("Buzzer: Playing sound "));
-    Serial.println(soundCode);
+    //Serial.print(F("Buzzer: Playing sound "));
+    //Serial.println(soundCode);
     
 }
 
@@ -271,6 +312,136 @@ uint16_t AskBuzzer::getFrequency_EASCANADA()
     }
 
     currentPlayingSound = SOUND_NONE;
+    return 0;
+}
+
+uint16_t AskBuzzer::getFrequency_ATOS_SCROLL() //Done
+{
+    uint16_t playdurationTime = 0;
+
+    playdurationTime += 13;
+    if (soundTime <= playdurationTime) return 500;
+    playdurationTime += 40;
+    if (soundTime <= playdurationTime) return 0;
+
+    {
+        currentPlayingSound = SOUND_NONE;
+        return 0;
+    }
+    return 0;
+}
+uint16_t AskBuzzer::getFrequency_ATOS_SELECT() //Done
+{
+    uint16_t playdurationTime = 0;
+
+    playdurationTime += 30;
+    if (soundTime <=playdurationTime) return 1000;
+    playdurationTime += 50;
+    if (soundTime <=playdurationTime) return 0;
+
+    playdurationTime += 30;
+    if (soundTime <=playdurationTime) return 1500;
+    playdurationTime += 125;
+    if (soundTime <=playdurationTime) 
+    {
+        currentPlayingSound = SOUND_NONE;
+        return 0;
+    }
+    return 0;
+}
+uint16_t AskBuzzer::getFrequency_ATOS_RETURN() //Done
+{
+
+    uint16_t playdurationTime = 0;
+
+    playdurationTime += 30;
+    if (soundTime <=playdurationTime) return 1500;
+    playdurationTime += 50;
+    if (soundTime <=playdurationTime) return 0;
+
+    playdurationTime += 30;
+    if (soundTime <=playdurationTime) return 1000;
+    playdurationTime += 125;
+    if (soundTime <=playdurationTime) 
+    {
+        currentPlayingSound = SOUND_NONE;
+        return 0;
+    }
+    return 0;
+}
+uint16_t AskBuzzer::getFrequency_ATOS_BOOTUP()
+{
+    uint16_t playdurationTime = 0;
+
+    playdurationTime += 20;
+    if (soundTime <= playdurationTime) return 1200;
+    playdurationTime += 40;
+    if (soundTime <= playdurationTime) return 0;
+
+    playdurationTime += 20;
+    if (soundTime <= playdurationTime) return 1500;
+    playdurationTime += 60;
+    if (soundTime <= playdurationTime) return 0;
+
+    playdurationTime += 20;
+    if (soundTime <= playdurationTime) return 2000;
+    playdurationTime += 100;
+    if (soundTime <= playdurationTime) 
+    {
+        currentPlayingSound = SOUND_NONE;
+        return 0;
+    }
+    return 0;
+}
+uint16_t AskBuzzer::getFrequency_ATOS_SHUTDOWN()
+{
+    uint16_t playdurationTime = 0;
+
+    playdurationTime += 30;
+    if (soundTime <=playdurationTime) return 500;
+
+    playdurationTime += 50;
+    if (soundTime <= playdurationTime) return 0;
+    
+    playdurationTime += 30;
+    if (soundTime <=playdurationTime) return 500;
+
+    playdurationTime += 50;
+    if (soundTime <= playdurationTime) return 0;
+    
+    playdurationTime += 30;
+    if (soundTime <=playdurationTime) return 500;
+
+    playdurationTime += 50;
+    if (soundTime <=playdurationTime) 
+    {
+        currentPlayingSound = SOUND_NONE;
+        return 0;
+    }
+    return 0;
+}
+uint16_t AskBuzzer::getFrequency_ATOS_NOBATTERY() //Done
+{
+    uint16_t playdurationTime = 0;
+
+    playdurationTime += 20;
+    if (soundTime <= playdurationTime) return 1200;
+    playdurationTime += 40;
+    if (soundTime <= playdurationTime) return 0;
+
+    playdurationTime += 20;
+    if (soundTime <= playdurationTime) return 1200;
+    playdurationTime += 60;
+    if (soundTime <= playdurationTime) return 0;
+
+    playdurationTime += 20;
+    if (soundTime <= playdurationTime) return 1200;
+    playdurationTime += 100;
+    if (soundTime <= playdurationTime) 
+    {
+        currentPlayingSound = SOUND_NONE;
+        return 0;
+    }
     return 0;
 }
 

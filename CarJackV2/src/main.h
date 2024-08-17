@@ -82,7 +82,7 @@ uint64_t kDerivative_display = 1;
 float currentTemperature;
 float currentHumidity;
 bool dayBrightness;
-bool carPowered;
+bool carPowered = true;
 
 /*=== === === MUTEX === === ===*/
 //Audio
