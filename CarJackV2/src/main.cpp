@@ -2,6 +2,10 @@
 
 /*=== === === ALPHA === === ===*/
 //Display functions
+void toggleSound_Alpha()
+{
+  playSound(SOUND_TEMPDEBUG_TOGGLE); //Backdoor that toggles sound
+}
 void cycleLedEffect()
 {
   ledEffect++;
@@ -35,15 +39,6 @@ void cycleLedEffect()
     }
     break;
   }
-}
-void toggleAutoClimate() 
-{
-  autoClimate = !autoClimate;
-  askServo->setEnabled(autoClimate);
-}
-void toggleSound()
-{
-  sound = !sound;
 }
 void engageScreenSaver()
 {
@@ -177,7 +172,7 @@ void enterMode_VarEdit_Brightness_No()
   Serial.println(F("Mode switch: Leave Brightness (No)"));
 
   ledBrightness = ledBrightnessOld;
-  trinity->setBrightness(ledBrightness, false);
+  setBrightness(ledBrightness);
 
   enterMode_Menu();
 }
@@ -187,6 +182,7 @@ void enterMode_VarEdit_Brightness()
 
   menuDisplay->openDialogBox_Variable(false, "Brightness", &ledBrightness, &enterMode_VarEdit_Brightness_Yes, &enterMode_VarEdit_Brightness_No);
 
+  ledBrightnessOld = ledBrightness;
   
   systemState = SYSTEMSTATE_VAREDIT_BRIGHTNESS;
 }
@@ -350,7 +346,16 @@ void doDisplayShit()
   menuDisplay->tick();
 }
 
+/*=== === === BETA === === ===*/
+void toggleSound_Beta() //IN CORE BETA
+{
+  sound = !sound;
+  askBuzzer->setEnabled(sound);
+  askBuzzer->playSound(SOUND_ATOS_SELECT);
+}
+
 /*=== === === MUTEX === === ===*/
+//Sound
 void playSound(uint8_t sound)
 {
   buffered_sound_in = sound;
@@ -376,11 +381,14 @@ void checkNew_playSound_out()
   if (buffered_sound_mutex != 0)
   {
     askBuzzer->playSound(buffered_sound_mutex);
+
+    if (buffered_sound_mutex == SOUND_TEMPDEBUG_TOGGLE) toggleSound_Beta(); //Backdoor that toggles sound
+
     buffered_sound_mutex = 0;
   }
   soundMutexTaken = false;  
 }
-
+//Encoder
 void bufferEncoder(int8_t encoderVal)
 {
   buffered_encoder_in += encoderVal;
@@ -413,8 +421,9 @@ void checkNew_encoder_out()
   encoderMutexTaken = false;
 }
 
-/*=== === === BETA === === ===*/
 
+
+/*=== === === SYSTEM === === ===*/
 void setup()
 {
   pinMode(PIN_RELAY, INPUT_PULLUP); //Quick pin high for relay
@@ -464,13 +473,10 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
   //Leds
   pinMode(PIN_LEDS, OUTPUT);
   //PWM servo
-  servoTime = 1000/MAXSERVOFRAMERATE;
-  askServo = new AskServo(PIN_SERVO, PIN_ENDSTOP_MIN, PIN_ENDSTOP_MAX, SERVO_MIN, SERVO_MAX);
-  pinMode(PIN_ENDSTOP_MIN, INPUT_PULLUP);
-  pinMode(PIN_ENDSTOP_MAX, INPUT_PULLUP);
-  pinMode(PIN_MANUALOVERIDE_SERVO, INPUT_PULLUP);
+  
+  askServo = new AskServo(PIN_SERVO, PIN_ENDSTOP_MIN, PIN_ENDSTOP_MAX, PIN_MANUALOVERIDE_SERVO);
   //PID
-  pid = new PID(&kProportional, &kIntegral, &kDerivative, SERVO_MIN, SERVO_MAX);
+  pid = new PID(&kProportional, &kIntegral, &kDerivative, SERVO_SPEED_NEGATIVE, SERVO_SPEED_POSITIVE);
   pid->setSetpoint(21);
   //DHT
   Wire.begin(PIN_SDA, PIN_SCL);
@@ -493,7 +499,6 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
     MenuItem_Folder *menuItemFilder_Climate             =new MenuItem_Folder("Climate",         sprite40_thermometer,     NULL, NULL,                               "", ""              );
     menuItemFolder_Root_Main              ->addMenuItem(menuItemFilder_Climate                                                                                                          );
       menuItemFilder_Climate              ->addMenuItem(new MenuItem_U64    ("Temperature",     sprite40_airco,           &enterMode_VarEdit_Temperature,           "", &goalTemperature));
-      menuItemFilder_Climate              ->addMenuItem(new MenuItem_Bool   ("Auto Climate",    sprite40_fans,            &toggleAutoClimate,                       "", &autoClimate    ));
       MenuItem_Folder *menuItemFolder_PIDSettings      =new MenuItem_Folder ("PID",             sprite40_gear,            NULL, NULL,                               "", ""              );
       menuItemFilder_Climate              ->addMenuItem(menuItemFolder_PIDSettings                                                                                                      );
         menuItemFolder_PIDSettings        ->addMenuItem(new MenuItem_U64    ("KP",              sprite40_gear,            &enterMode_VarEdit_PID_KP,                "", &kProportional_display  ));
@@ -503,14 +508,13 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
     menuItemFolder_Root_Main              ->addMenuItem(menuItemFolder_DisplaySettings                                                                                                  );
       menuItemFolder_DisplaySettings      ->addMenuItem(new MenuItem_Bool   ("Screen Off",      sprite40_onOff,           &toggleScreenOff,                         "", &screenOff      ));
       menuItemFolder_DisplaySettings      ->addMenuItem(new MenuItem_Bool   ("Night Screen Off",sprite40_moon,            &toggleNightScreen,                       "", &nightScreenOff ));
-    menuItemFolder_Root_Main              ->addMenuItem(new MenuItem_Bool   ("Sound",           sprite40_sounds,          &toggleSound,                             "", &sound          ));
+    menuItemFolder_Root_Main              ->addMenuItem(new MenuItem_Bool   ("Sound",           sprite40_sounds,          &toggleSound_Alpha,                       "", &sound          ));
     
   displayData = new struct DisplayData();
   menuDisplay = new MenuDisplay(menuItemFolder_Root_Main, GRAPHICSTYPE_SPRITES, displayData);
 
   displayData->ledEffect          = &ledEffect;
   displayData->ledBrightness      = &ledBrightness;
-  displayData->autoClimate        = &autoClimate;
   displayData->goalTemperature    = &goalTemperature;
   displayData->screenOff          = &screenOff;
   displayData->nightScreenOff     = &nightScreenOff;
@@ -538,6 +542,7 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
 
   
   Serial.println("----- ===== Task Alpha Setup Complete ===== -----");
+
   
   //Loop
   while (1)
@@ -594,27 +599,17 @@ void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
 
 
     //Thermometer, PID & Servo
-
-    
-    if (digitalRead(PIN_ENDSTOP_MIN) == LOW) Serial.println("Endstop min");
-    if (digitalRead(PIN_ENDSTOP_MAX) == LOW) Serial.println("Endstop max");
-    if (digitalRead(PIN_MANUALOVERIDE_SERVO) == LOW) Serial.println("Manual override");
-
-    if(currentMillis >= (prevServoMillis+servoTime))
+    if (currentMillis >= prevMillis_Servo + INTERVALMILLIS_SERVOREFRESH)
     {
-      prevServoMillis = currentMillis;
-
+      prevMillis_Servo = currentMillis;
       int status = DHT.read();
       currentTemperature = DHT.getTemperature();
       currentHumidity = DHT.getHumidity();
-
-      
-
       askServo->setVelocity(pid->calculate(currentTemperature));
-
-
-      askServo->tick();
+      askServo->setTemperatureDifference(currentTemperature - goalTemperature);
     }
+    askServo->tick(); //Check if limit switches are hit
+    
 
     //Leds
     trinity->tick();
@@ -640,8 +635,8 @@ void task_beta( void *pvParameters )
   encoder.clearCount();
 
   askBuzzer               = new AskBuzzer(PIN_BUZZER);
-  askBuzzer->setEnabled(false);
-  playSound(SOUND_ATOS_BOOTUP);
+  askBuzzer->setEnabled(true);
+  playSound(SOUND_ATOS_BOOTUP); 
 
   Serial.println("----- ===== Task Beta Setup Complete ===== -----");
   

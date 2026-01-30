@@ -27,7 +27,9 @@ MenuDisplay::MenuDisplay(MenuItem_Folder *rootFolder, uint8_t graphicsType, Disp
 
   Serial.println(F("MenuDisplay Started, Display Starting..."));
 
-  //display = new U8G2_SSD1309_128X64_NONAME0_F_4W_HW_SPI(U8G2_R0, /* cs=*/ PIN_SPI_CS, /* dc=*/ PIN_SPI_DC, /* reset=*/ PIN_SPI_RST);
+    // ...existing code...
+  //display = new U8G2_SSD1309_128X64_NONAME2_F_HW_I2C(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clk=*/ PIN_SCL, /* data=*/ PIN_SDA);
+  // ...existing code...
   display = new U8G2_SH1106_128X64_NONAME_F_HW_I2C(U8G2_R0, /* reset=*/ U8X8_PIN_NONE, /* clock=*/ PIN_SCL, /* data=*/ PIN_SDA);
   display->begin();
   display->setFont(u8g2_font_6x10_tf);

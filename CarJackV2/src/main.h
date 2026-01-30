@@ -34,7 +34,7 @@
 #define MAXENCODERSTEPS 1
 
 
-#define MAXSERVOFRAMERATE 1
+#define INTERVALMILLIS_SERVOREFRESH 1000
 
 //Temp
 uint8_t servoAngle = 90;
@@ -48,35 +48,34 @@ PID           *pid;
 AskServo      *askServo;
 Trinity       *trinity;
 AskBuzzer     *askBuzzer;
-int16_t       servoTime;
-uint64_t      prevServoMillis;
 uint8_t       displayMode;
 ESP32Encoder  encoder;
 int8_t        encoderValue;
-uint8_t       powerLossTimer = 11;
+uint8_t       powerLossTimer;
 uint32_t      lastMillis_PowerLoss = 0;
 DHT20         DHT;
 uint8_t       systemState = SYSTEMSTATE_MENU;
 uint64_t      pidNew;
 char          pidCurrent;
 uint64_t      ledBrightnessOld;
+uint64_t      kProportional_display;
+uint64_t      kIntegral_display;
+uint64_t      kDerivative_display;
+uint64_t        goalTemperatureNew;
+uint32_t      prevMillis_Servo = 0;
 
 
 //Settings
-uint64_t ledEffect = 0;
-uint64_t ledBrightness = 100;
-bool autoClimate = true;
-uint64_t goalTemperature = 21;
-uint64_t goalTemperatureNew;
-bool screenOff = false;
-bool nightScreenOff = false;
-bool sound = false;
-uint8_t kProportional = 5;
-uint8_t kIntegral = 1;
-uint8_t kDerivative = 1;
-uint64_t kProportional_display = 5;
-uint64_t kIntegral_display = 1;
-uint64_t kDerivative_display = 1;
+uint64_t    ledEffect           = 0;
+uint64_t    ledBrightness       = 100;
+uint64_t    goalTemperature     = 21;
+bool        screenOff           = false;
+bool        nightScreenOff      = false;
+bool        sound               = true;
+uint8_t     kProportional       = 5;
+uint8_t     kIntegral           = 1;
+uint8_t     kDerivative         = 1;
+
 
 //Sensors
 float currentTemperature;

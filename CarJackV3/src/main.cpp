@@ -1,90 +1,208 @@
-#include <Arduino.h>
-#include "BluetoothSerial.h"
-#include "ELMduino.h"
+#include "main.h"
 
-BluetoothSerial SerialBT;
-#define ELM_PORT SerialBT
-#define DEBUG_PORT Serial
 
-ELM327 myELM327;
-
-typedef enum
+void switchOperatingMode()
 {
-  ENG_RPM,
-  SPEED
-} obd_pid_states;
+  if (operatingMode == CCMODE)
+  {
+    operatingMode = MENUMODE;
+    Serial.println("Switched to MENUMODE");
+  }
+  else if (operatingMode == MENUMODE)
+  {
+    operatingMode = CCMODE;
+    Serial.println("Switched to CCMODE");
+  }
+}
 
-obd_pid_states obd_state = ENG_RPM;
+void pollRotaryEncoder()
+{
+  //CC: Left/right to decrease/increase speed
+  //Menu: Left/right to navigate menu
+  if (buffered_encoder != 0)
+  {
+    if (operatingMode == CCMODE)
+    {
+      switch (cruiseControl.getRotaryMode())
+      {
+        case CCRotaryMode::SPEED:
+          //Cruise Control Mode - Adjust Speed
+          Serial.print("Adjusting target speed by ");
+          Serial.println(buffered_encoder);
+          cruiseControl.addTargetSpeed(buffered_encoder);
+        break;
+        case CCRotaryMode::SETTINGS:
+        {
+          if (buffered_encoder > 0) cruiseControl.cycleResolution();
+          else if (buffered_encoder < 0) cruiseControl.cycleAcceleration();
+        }
+        break;
+        default:
+          //Locked - do nothing
+          Serial.println("Wheel locked - no action");
+        break;
+      }
+    }
+    else if (operatingMode == MENUMODE)
+    {
+      //Menu Mode
+      if (buffered_encoder > 0) dataLink.transmit_MenuInteraction(MenuInteraction::RIGHT);
+      else if (buffered_encoder < 0) dataLink.transmit_MenuInteraction(MenuInteraction::LEFT);
+    }
+    buffered_encoder = 0;
+  }
+}
+  
 
-float rpm = 0;
-float mph = 0;
+void pollButton()
+{
+  //Button
+    switch (button->getCommand())
+    {
+      case BTN_TPD: //Short press: Enable or disable cruise control
+      {
+        Serial.println("BTN_TPD");
+        if (operatingMode != MENUMODE) cruiseControl.cycleOperatingMode();
+        dataLink.transmit_MenuInteraction(MenuInteraction::ENTER);
+      }
+      break;
 
+      
+      case BTN_HLD_1S:
+      {
+        Serial.println("BTN_HLD_1S");
+        if (operatingMode == CCMODE) cruiseControl.loadMemSpeed();
+        else if (operatingMode == MENUMODE) dataLink.transmit_MenuInteraction(MenuInteraction::EXIT);
+      }
+      break;
+
+      case BTN_HLD_3S:
+      {
+        Serial.println("BTN_HLD_3S");
+        
+        if (operatingMode == CCMODE) cruiseControl.setMemSpeed(vehicle.getData().vehicleSpeed);
+        // No action for MENUMODE
+      }
+      break;
+
+      case BTN_HLD_5S:
+      {
+        Serial.println("BTN_HLD_5S");
+        switchOperatingMode();
+      }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+/*=== === === SYSTEM === === ===*/
 void setup()
 {
-  DEBUG_PORT.begin(115200);
-  // SerialBT.setPin("1234");
-  ELM_PORT.begin("ArduHUD", true);
+  Serial.begin(115200);
+  Serial.println(F("----- ===== Setup started ===== -----"));
 
-  if (!ELM_PORT.connect("OBDII"))
-  {
-    DEBUG_PORT.println("Couldn't connect to OBD scanner - Phase 1");
-    while (1)
-    {
+  xTaskCreatePinnedToCore
+  (
+    task_alpha,       /* Task function. */
+    "task_main",         /* name of task. */
+    10000,           /* Stack size of task */
+    NULL,            /* parameter of the task */
+    1,               /* priority of the task */
+    &Task1,          /* Task handle to keep track of created task */
+    0                /* pin task to core 0 */
+  );              
 
-    }
-  }
-
-  if (!myELM327.begin(ELM_PORT, true, 2000))
-  {
-    DEBUG_PORT.println("Couldn't connect to OBD scanner - Phase 2");
-    while (1)
-    { 
-    }
-  }
-
-  DEBUG_PORT.println("Connected to ELM327");
+  xTaskCreatePinnedToCore
+  (
+    task_beta,       /* Task function. */
+    "task_leds",         /* name of task. */
+    10000,           /* Stack size of task */
+    NULL,            /* parameter of the task */
+    1,               /* priority of the task */
+    &Task2,          /* Task handle to keep track of created task */
+    1               /* pin task to core 1 */
+  );
 }
-
-void loop()
+void loop() //Deprecated, replaced by tasks
 {
-  switch (obd_state)
+  //Serial.print("Error: main.loop got called");
+}
+
+/*=== === === MAIN === === ===*/
+void task_alpha( void *pvParameters ) //Multicore replacement for "loop()"
+{
+  //Setup
+  Serial.println("----- ===== Task Alpha Setup Started ===== -----");
+
+  //Encoder
+  //encoder.attachSingleEdge(PIN_ENCODER_B, PIN_ENCODER_A);
+  //encoder.clearCount();
+  button = new AskButton(PIN_BUTTON, 400);
+
+
+
+
+  Serial.println("----- ===== Task Alpha Setup Complete ===== -----");
+
+  
+  //Loop
+  while (1)
   {
-    case ENG_RPM:
+    uint64_t currentMillis = millis();
+
+    //Encoder
+    //buffered_encoder_in += encoder.getCount();
+
+    if (buffered_encoder_in != 0)
     {
-      rpm = myELM327.rpm();
-      
-      if (myELM327.nb_rx_state == ELM_SUCCESS)
-      {
-        DEBUG_PORT.print("rpm: ");
-        DEBUG_PORT.println(rpm);
-        obd_state = SPEED;
-      }
-      else if (myELM327.nb_rx_state != ELM_GETTING_MSG)
-      {
-        myELM327.printError();
-        obd_state = SPEED;
-      }
-      
-      break;
+      buffered_encoder += buffered_encoder_in;
+      buffered_encoder_in = 0;
+
+      if (buffered_encoder > MAXENCODERSTEPS) buffered_encoder = MAXENCODERSTEPS;
+      if (buffered_encoder < -MAXENCODERSTEPS) buffered_encoder = -MAXENCODERSTEPS;
     }
-    
-    case SPEED:
+    pollRotaryEncoder();
+    pollButton();
+
+    if (!OBD2MutexTaken)
     {
-      mph = myELM327.mph();
-      
-      if (myELM327.nb_rx_state == ELM_SUCCESS)
-      {
-        DEBUG_PORT.print("mph: ");
-        DEBUG_PORT.println(mph);
-        obd_state = ENG_RPM;
-      }
-      else if (myELM327.nb_rx_state != ELM_GETTING_MSG)
-      {
-        myELM327.printError();
-        obd_state = ENG_RPM;
-      }
-      
-      break;
+      OBD2MutexTaken = true;
+      cruiseControl.updateVehicleData(obdData);
+      OBD2MutexTaken = false;
     }
+
+    cruiseControl.loop();
+    dataLink.transmit_Data(cruiseControl.getDataFrame());
+  
+
+    vTaskDelay(1);
   }
 }
+void task_beta( void *pvParameters)
+{
+
+  Serial.println("Connected to ELM327");
+
+  while (1)
+  {
+    vehicle.loop();
+
+    if(!OBD2MutexTaken)
+    {
+      OBD2MutexTaken = true;
+      obdData = vehicle.getData();
+      OBD2MutexTaken = false;
+    }
+
+
+    vTaskDelay(100);
+  }
+}
+

@@ -21,6 +21,8 @@
 #define SOUND_ATOS_SHUTDOWN     14
 #define SOUND_ATOS_NOBATTERY    15
 
+#define SOUND_TEMPDEBUG_TOGGLE  255 //Workaround for debugging to turn on/off the buzzer. NEVER used inside buzzer code.
+
 class AskBuzzer
 {
     private:

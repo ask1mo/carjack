@@ -114,6 +114,7 @@ class MenuDisplay
     uint64_t lastScreenupdateTime;
     bool continousFramerateMode;
     U8G2_SH1106_128X64_NONAME_F_HW_I2C  *display;
+    //U8G2_SSD1309_128X64_NONAME2_F_HW_I2C *display; //SSD1309 OLED Display
     bool allowScreensaver;
     uint8_t bootMessageLineIndex;
     uint8_t currentFrame;
